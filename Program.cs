@@ -94,16 +94,15 @@ namespace SertCheck
                                                         file.c_gosuslugi_key = getKey(result.Text);
                                                         db.Update(file);
                                                         db.SaveChanges();
-                                                        
-                                                    } else
-                                                    {
-                                                        file.c_gosuslugi_key = Guid.Empty.ToString();
-                                                        db.Update(file);
-                                                        db.SaveChanges();
-                                                    }
+                                                        continue;
 
-                                                    continue;
+                                                    } 
                                                 }
+
+                                                file.c_gosuslugi_key = Guid.Empty.ToString();
+                                                db.Update(file);
+                                                db.SaveChanges();
+                                                continue;
                                             }
                                         }
                                     }
