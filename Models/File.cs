@@ -14,7 +14,8 @@ namespace SertCheck.Models
         [Key]
         public Guid id { get; set; }
 
-        public byte[] ba_pdf { get; set; }
+        public byte[] ba_data { get; set; }
+        public string c_type { get; set; }
 
         public Guid f_document { get; set; }
         public DateTime dx_created { get; set; }

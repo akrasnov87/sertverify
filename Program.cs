@@ -39,7 +39,7 @@ namespace SertCheck
                 var query = (from f in db.Files
                             join d in db.Documents on f.f_document equals d.id
                             join u in db.Users on d.f_user equals u.id
-                            where !u.sn_delete && !u.b_disabled && !d.sn_delete && string.IsNullOrEmpty(f.c_gosuslugi_key) && f.ba_pdf != null && !f.sn_delete
+                            where !u.sn_delete && !u.b_disabled && !d.sn_delete && string.IsNullOrEmpty(f.c_gosuslugi_key) && f.c_type == "sert" && !f.sn_delete
                             select new { 
                                 d.id,
                                 d.c_first_name,
@@ -56,7 +56,7 @@ namespace SertCheck
                     {
                         try
                         {
-                            byte[] bytes = file.ba_pdf;
+                            byte[] bytes = file.ba_data;
                             using (InputPdf inputPdf = new InputPdf(bytes))
                             {
                                 PdfRasterizer rasterizer = new PdfRasterizer(inputPdf, 1, 1);
