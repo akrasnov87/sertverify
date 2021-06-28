@@ -21,7 +21,7 @@ namespace SertCheck
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseNpgsql("Host=34.122.9.109;Port=5432;Database=vaccine-release-db;Username=mobnius;Password=XfOgQt");
+            optionsBuilder.UseNpgsql("Host=34.134.26.33;Port=5432;Database=vaccine-release-db;Username=vaccine-sert-verify;Password=J2Jbo6");
         }
     }
 }
