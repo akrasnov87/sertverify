@@ -16,6 +16,7 @@ namespace SertCheck
         }
 
         public DbSet<Document> Documents { get; set; }
+        public DbSet<User> Users { get; set; }
         public DbSet<File> Files { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
