@@ -32,14 +32,14 @@ namespace SertCheck
 
         private void Run()
         {
-            Log("send processing: " + DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"));
+            Log("processing: " + DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"));
 
             using (ApplicationContext db = new ApplicationContext())
             {
                 var query = (from f in db.Files
                             join d in db.Documents on f.f_document equals d.id
                             join u in db.Users on d.f_user equals u.id
-                            where !u.sn_delete && !u.b_disabled && !d.sn_delete && !f.b_verify && f.ba_pdf != null && !f.sn_delete
+                            where !u.sn_delete && !u.b_disabled && !d.sn_delete && string.IsNullOrEmpty(f.c_gosuslugi_key) && f.ba_pdf != null && !f.sn_delete
                             select new { 
                                 d.id,
                                 d.c_first_name,
@@ -118,7 +118,7 @@ namespace SertCheck
                 }
             }
 
-            Log("send finished " + DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"));
+            Log("finished " + DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"));
 
             SendReportMail();
         }
