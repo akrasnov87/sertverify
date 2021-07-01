@@ -39,7 +39,7 @@ namespace SertCheck
                 var query = (from f in db.Files
                             join d in db.Documents on f.f_document equals d.id
                             join u in db.Users on d.f_user equals u.id
-                            where !u.sn_delete && !u.b_disabled && !d.sn_delete && !f.b_verify && f.c_type == "sert" && !f.sn_delete
+                            where !u.sn_delete && !u.b_disabled && !d.sn_delete && string.IsNullOrEmpty(f.c_gosuslugi_key) && f.c_type == "sert" && !f.sn_delete
                             select new { 
                                 d.id,
                                 d.c_first_name,
@@ -104,16 +104,23 @@ namespace SertCheck
                                                     }
                                                 } else
                                                 {
-                                                    file.c_notice = "Даты рождения не совпадает.";
+                                                    file.c_notice = "Дата рождения не совпадает.";
                                                     Log(file.c_notice);
                                                 }
 
-                                                file.c_gosuslugi_key = Guid.Empty.ToString();
+                                                //file.c_gosuslugi_key = Guid.Empty.ToString();
                                                 db.Update(file);
                                                 db.SaveChanges();
                                                 continue;
                                             }
                                         }
+                                    } else
+                                    {
+                                        file.c_notice = "На документе QR-код не найден.";
+                                        Log(file.c_notice);
+                                        file.c_gosuslugi_key = Guid.Empty.ToString();
+                                        db.Update(file);
+                                        db.SaveChanges();
                                     }
                                 }
                             }
