@@ -39,7 +39,7 @@ namespace SertCheck
                 var query = (from f in db.Files
                             join d in db.Documents on f.f_document equals d.id
                             join u in db.Users on d.f_user equals u.id
-                            where !u.sn_delete && !u.b_disabled && !d.sn_delete && string.IsNullOrEmpty(f.c_gosuslugi_key) && f.c_type == "sert" && !f.sn_delete
+                            where !u.sn_delete && !u.b_disabled && !d.sn_delete && !f.b_verify && f.c_type == "sert" && !f.sn_delete
                             select new { 
                                 d.id,
                                 d.c_first_name,
@@ -92,17 +92,20 @@ namespace SertCheck
 
                                                         file.b_verify = true;
                                                         file.c_gosuslugi_key = getKey(result.Text);
+
                                                         db.Update(file);
                                                         db.SaveChanges();
                                                         continue;
 
                                                     } else
                                                     {
-                                                        Log("ФИО не совпадает.");
+                                                        file.c_notice = "ФИО не совпадает.";
+                                                        Log(file.c_notice);
                                                     }
                                                 } else
                                                 {
-                                                    Log("Даты рождения не совпадает.");
+                                                    file.c_notice = "Даты рождения не совпадает.";
+                                                    Log(file.c_notice);
                                                 }
 
                                                 file.c_gosuslugi_key = Guid.Empty.ToString();
@@ -117,6 +120,11 @@ namespace SertCheck
                         }
                         catch (Exception e)
                         {
+                            file.c_notice = "Возможно документ не является PDF-сертификатом.";
+                            file.c_gosuslugi_key = Guid.Empty.ToString();
+                            db.Update(file);
+                            db.SaveChanges();
+
                             Log("[ERR]: " + e.ToString());
                         }
                     }
