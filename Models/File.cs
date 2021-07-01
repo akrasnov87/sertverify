@@ -22,5 +22,6 @@ namespace SertCheck.Models
         public bool b_verify { get; set; }
         public string c_gosuslugi_key { get; set; }
         public bool sn_delete { get; set; }
+        public DateTime? d_date { get; set; }
     }
 }

@@ -96,7 +96,13 @@ namespace SertCheck
                                                         db.SaveChanges();
                                                         continue;
 
-                                                    } 
+                                                    } else
+                                                    {
+                                                        Log("ФИО не совпадает.");
+                                                    }
+                                                } else
+                                                {
+                                                    Log("Даты рождения не совпадает.");
                                                 }
 
                                                 file.c_gosuslugi_key = Guid.Empty.ToString();
@@ -134,7 +140,7 @@ namespace SertCheck
 
         private string getEncodeName(string name)
         {
-            string output = char.ToUpper(name[0]).ToString();
+            string output = char.ToUpper(name.Trim()[0]).ToString();
             for(int i = 1; i < name.Length; i++)
             {
                 output += "*";
