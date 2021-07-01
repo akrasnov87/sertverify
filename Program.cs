@@ -112,6 +112,12 @@ namespace SertCheck
                                                 db.Update(file);
                                                 db.SaveChanges();
                                                 continue;
+                                            } else
+                                            {
+                                                file.c_notice = "Документ неподтвержден, как PDF-сертификат о вакцинации.";
+                                                file.c_gosuslugi_key = Guid.Empty.ToString();
+                                                db.Update(file);
+                                                db.SaveChanges();
                                             }
                                         }
                                     } else
