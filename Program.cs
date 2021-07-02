@@ -28,6 +28,11 @@ namespace SertCheck
             Program program = new Program();
 
             program.Run();
+
+            if (args.Length > 0 && args[0] == "true")
+            {
+                program.SendReportMail();
+            }
         }
 
         private void Run()
@@ -146,8 +151,6 @@ namespace SertCheck
             }
 
             Log("finished " + DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"));
-
-            SendReportMail();
         }
 
         private void Log(string txt)
@@ -234,7 +237,7 @@ namespace SertCheck
             }
         }
 
-        private void SendReportMail()
+        public void SendReportMail()
         {
             MailAddress from = new MailAddress("mysmtp1987@gmail.com", "АРМ \"Вакцинация\"");
             MailAddress to = new MailAddress("akrasnov87@gmail.com");
