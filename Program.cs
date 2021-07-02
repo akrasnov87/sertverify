@@ -37,9 +37,9 @@ namespace SertCheck
             using (ApplicationContext db = new ApplicationContext())
             {
                 var query = (from f in db.Files
-                            join d in db.Documents on f.f_document equals d.id
-                            join u in db.Users on d.f_user equals u.id
-                            where !u.sn_delete && !u.b_disabled && !d.sn_delete && string.IsNullOrEmpty(f.c_gosuslugi_key) && f.c_type == "sert" && !f.sn_delete
+                             join d in db.Documents on f.f_document equals d.id
+                             join u in db.Users on d.f_user equals u.id
+                             where !u.sn_delete && !u.b_disabled && !d.sn_delete && string.IsNullOrEmpty(f.c_gosuslugi_key) && f.c_type == "sert" && !f.sn_delete
                             select new { 
                                 d.id,
                                 d.c_first_name,
@@ -63,13 +63,14 @@ namespace SertCheck
                                 rasterizer.Draw("temp/" + item.id + ".bmp", ImageFormat.Bmp, ImageSize.Dpi96);
 
                                 var reader = new BarcodeReaderGeneric();
+                                reader.AutoRotate = true;
 
                                 Bitmap image = (Bitmap)Image.FromFile("temp/" + item.id + ".bmp");
 
                                 using (image)
                                 {
-                                    LuminanceSource source;
-                                    source = new ZXing.BitmapLuminanceSource(image);
+                                    LuminanceSource source = new ZXing.BitmapLuminanceSource(image);
+
                                     //decode text from LuminanceSource
                                     Result result = reader.Decode(source);
                                     if (result != null && !string.IsNullOrEmpty(result.Text))
@@ -86,7 +87,7 @@ namespace SertCheck
                                                 if (item.d_birthday.HasValue &&
                                                     birthdate == item.d_birthday.Value.ToString("dd.MM.yyyy"))
                                                 {
-                                                    if (getEncodeName(item.c_first_name) + " " + getEncodeName(item.c_last_name) + " " + getEncodeName(item.c_middle_name) == fio)
+                                                    if (getEncodeName(item.c_first_name).ToLower() + " " + getEncodeName(item.c_last_name).ToLower() + " " + getEncodeName(item.c_middle_name).ToLower() == fio.ToLower())
                                                     {
                                                         Log("Сертификат подтвержден " + DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"));
 
@@ -99,12 +100,12 @@ namespace SertCheck
 
                                                     } else
                                                     {
-                                                        file.c_notice = "ФИО не совпадает.";
+                                                        file.c_notice = "ФИО не совпадает. \r\n" + getEncodeName(item.c_first_name) + " " + getEncodeName(item.c_last_name) + " " + getEncodeName(item.c_middle_name) + "\r\n" + fio;
                                                         Log(file.c_notice);
                                                     }
                                                 } else
                                                 {
-                                                    file.c_notice = "Дата рождения не совпадает.";
+                                                    file.c_notice = "Дата рождения не совпадает. \r\n" + birthdate + "\r\n" + item.d_birthday.Value.ToString("dd.MM.yyyy");
                                                     Log(file.c_notice);
                                                 }
 
@@ -161,7 +162,8 @@ namespace SertCheck
 
         private string getEncodeName(string name)
         {
-            string output = char.ToUpper(name.Trim()[0]).ToString();
+            name = name.Trim();
+            string output = char.ToUpper(name[0]).ToString();
             for(int i = 1; i < name.Length; i++)
             {
                 output += "*";
