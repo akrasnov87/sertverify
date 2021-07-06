@@ -92,7 +92,8 @@ namespace SertCheck
                                                 if (item.d_birthday.HasValue &&
                                                     birthdate == item.d_birthday.Value.ToString("dd.MM.yyyy"))
                                                 {
-                                                    if (getEncodeName(item.c_first_name).ToLower() + " " + getEncodeName(item.c_last_name).ToLower() + " " + getEncodeName(item.c_middle_name).ToLower() == fio.ToLower())
+                                                    string name = getEncodeName(item.c_first_name).ToLower() + " " + getEncodeName(item.c_last_name).ToLower() + " " + getEncodeName(item.c_middle_name).ToLower();
+                                                    if (name.Trim() == fio.ToLower())
                                                     {
                                                         Log("Сертификат подтвержден " + DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"));
 
