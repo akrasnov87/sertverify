@@ -177,17 +177,36 @@ namespace SertCheck
 
         private async Task<dynamic> StreamWithNewtonsoftJson(string uri, HttpClient httpClient)
         {
-            using var httpResponse = await httpClient.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead);
+            var request = new HttpRequestMessage(HttpMethod.Get,
+            uri);
+            request.Headers.Add("Accept", "application/json;charset=UTF-8");
+            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.64");
 
-            httpResponse.EnsureSuccessStatusCode(); // throws if not 200-299
+            var response = await httpClient.SendAsync(request);
 
-            if (httpResponse.Content is object 
-                && httpResponse.Content.Headers.ContentType != null 
-                && httpResponse.Content.Headers.ContentType.MediaType == "application/json")
+            /*if (response.IsSuccessStatusCode)
             {
-                var contentStream = await httpResponse.Content.ReadAsStreamAsync();
+                using var responseStream = await response.Content.ReadAsStreamAsync();
+                Branches = await JsonSerializer.DeserializeAsync
+                    <IEnumerable<GitHubBranch>>(responseStream);
+            }
+            else
+            {
+                GetBranchesError = true;
+                Branches = Array.Empty<GitHubBranch>();
+            }*/
+
+            //using var httpResponse = await httpClient.GetAsync(uri);
+
+            //httpResponse.EnsureSuccessStatusCode(); // throws if not 200-299
+
+            if (response.Content is object 
+                && response.Content.Headers.ContentType != null)
+            {
+                var contentStream = await response.Content.ReadAsStreamAsync();
 
                 using var streamReader = new StreamReader(contentStream);
+                //string text = streamReader.ReadToEnd();
                 using var jsonReader = new JsonTextReader(streamReader);
 
                 JsonSerializer serializer = new JsonSerializer();
