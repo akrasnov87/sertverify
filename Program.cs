@@ -99,7 +99,7 @@ namespace SertCheck
 
                                                         file.b_verify = true;
                                                         file.c_gosuslugi_key = getKey(result.Text);
-
+                                                        file.c_notice = null;
                                                         db.Update(file);
                                                         db.SaveChanges();
                                                         continue;
