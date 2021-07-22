@@ -24,5 +24,6 @@ namespace SertCheck.Models
         public bool sn_delete { get; set; }
         public DateTime? d_date { get; set; }
         public string c_notice { get; set; }
+        public string c_url { get; set; }
     }
 }

@@ -44,8 +44,8 @@ namespace SertCheck
                 var query = (from f in db.Files
                              join d in db.Documents on f.f_document equals d.id
                              join u in db.Users on d.f_user equals u.id
-                             where !u.sn_delete && !u.b_disabled && !d.sn_delete && string.IsNullOrEmpty(f.c_gosuslugi_key) && f.c_type == "sert" && !f.sn_delete
-                            select new { 
+                             where !u.sn_delete && !u.b_disabled && !d.sn_delete && f.c_type == "sert" && !f.sn_delete && string.IsNullOrEmpty(f.c_url)
+                             select new { 
                                 d.id,
                                 d.c_first_name,
                                 d.c_last_name,
@@ -53,9 +53,13 @@ namespace SertCheck
                                 d.d_birthday,
                                 f_file = f.id
                             }).ToArray();
+                Console.WriteLine(query.Count());
 
+                int idx = 0;
                 foreach(var item in query)
                 {
+                    Console.WriteLine(idx);
+                    idx++;
                     SertCheck.Models.File file = db.Files.Where(t => t.id == item.f_file).SingleOrDefault();
                     if (file != null)
                     {
@@ -64,76 +68,91 @@ namespace SertCheck
                             byte[] bytes = file.ba_data;
                             using (InputPdf inputPdf = new InputPdf(bytes))
                             {
-                                PdfRasterizer rasterizer = new PdfRasterizer(inputPdf, 1, 1);
-                                rasterizer.Draw("temp/" + item.id + ".bmp", ImageFormat.Bmp, ImageSize.Dpi96);
-
-                                var reader = new BarcodeReaderGeneric();
-                                reader.AutoRotate = true;
-
-                                Bitmap image = (Bitmap)Image.FromFile("temp/" + item.id + ".bmp");
-
-                                using (image)
+                                using (PdfRasterizer rasterizer = new PdfRasterizer(inputPdf, 1, 1))
                                 {
-                                    LuminanceSource source = new ZXing.BitmapLuminanceSource(image);
+                                    rasterizer.Draw("temp/" + item.id + ".bmp", ImageFormat.Bmp, ImageSize.Dpi96);
 
-                                    //decode text from LuminanceSource
-                                    Result result = reader.Decode(source);
-                                    if (result != null && !string.IsNullOrEmpty(result.Text))
+                                    var reader = new BarcodeReaderGeneric();
+                                    reader.AutoRotate = true;
+
+                                    Bitmap image = (Bitmap)Image.FromFile("temp/" + item.id + ".bmp");
+
+                                    using (image)
                                     {
-                                        string url = getVerifyUrl(getKey(result.Text));
-                                        using (HttpClient client = new HttpClient())
+                                        LuminanceSource source = new ZXing.BitmapLuminanceSource(image);
+
+                                        //decode text from LuminanceSource
+                                        Result result = reader.Decode(source);
+
+                                        if (result != null && !string.IsNullOrEmpty(result.Text))
                                         {
-                                            var data = StreamWithNewtonsoftJson(url, client).GetAwaiter().GetResult();
-                                            if (data != null)
+                                            using (HttpClient client = new HttpClient())
                                             {
-                                                string birthdate = data.birthdate;
-                                                string fio = data.fio;
+                                                file.c_url = result.Text;
 
-                                                if (item.d_birthday.HasValue &&
-                                                    birthdate == item.d_birthday.Value.ToString("dd.MM.yyyy"))
+                                                string url = getVerifyUrl(getKey(result.Text));
+                                                var data = StreamWithNewtonsoftJson(url, client).GetAwaiter().GetResult();
+
+                                                if (data == null)
                                                 {
-                                                    string name = getEncodeName(item.c_first_name).ToLower() + " " + getEncodeName(item.c_last_name).ToLower() + " " + getEncodeName(item.c_middle_name).ToLower();
-                                                    if (name.Trim() == fio.ToLower())
-                                                    {
-                                                        Log("Сертификат подтвержден " + DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"));
-
-                                                        file.b_verify = true;
-                                                        file.c_gosuslugi_key = getKey(result.Text);
-                                                        file.c_notice = null;
-                                                        db.Update(file);
-                                                        db.SaveChanges();
-                                                        continue;
-
-                                                    } else
-                                                    {
-                                                        file.c_notice = "ФИО не совпадает. \r\n" + getEncodeName(item.c_first_name) + " " + getEncodeName(item.c_last_name) + " " + getEncodeName(item.c_middle_name) + "\r\n" + fio;
-                                                        Log(file.c_notice);
-                                                    }
-                                                } else
-                                                {
-                                                    file.c_notice = "Дата рождения не совпадает. \r\n" + birthdate + "\r\n" + item.d_birthday.Value.ToString("dd.MM.yyyy");
-                                                    Log(file.c_notice);
+                                                    url = getVerifyV2Url(getKey(result.Text));
+                                                    data = StreamWithNewtonsoftJsonV2(url, client).GetAwaiter().GetResult();
                                                 }
 
-                                                //file.c_gosuslugi_key = Guid.Empty.ToString();
-                                                db.Update(file);
-                                                db.SaveChanges();
-                                                continue;
-                                            } else
-                                            {
-                                                file.c_notice = "Документ неподтвержден, как PDF-сертификат о вакцинации.";
-                                                //file.c_gosuslugi_key = Guid.Empty.ToString();
-                                                db.Update(file);
-                                                db.SaveChanges();
+                                                if (data != null)
+                                                {
+                                                    string birthdate = data.birthdate;
+                                                    string fio = data.fio;
+
+                                                    if (item.d_birthday.HasValue &&
+                                                        birthdate == item.d_birthday.Value.ToString("dd.MM.yyyy"))
+                                                    {
+                                                        string name = getEncodeName(item.c_first_name).ToLower() + " " + getEncodeName(item.c_last_name).ToLower() + " " + getEncodeName(item.c_middle_name).ToLower();
+                                                        if (name.Trim() == fio.ToLower())
+                                                        {
+                                                            Log("Сертификат подтвержден " + DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"));
+
+                                                            file.b_verify = true;
+                                                            file.c_gosuslugi_key = getKey(result.Text);
+                                                            file.c_notice = null;
+                                                            db.Update(file);
+                                                            db.SaveChanges();
+                                                            continue;
+
+                                                        }
+                                                        else
+                                                        {
+                                                            file.c_notice = "ФИО не совпадает. \r\n" + getEncodeName(item.c_first_name) + " " + getEncodeName(item.c_last_name) + " " + getEncodeName(item.c_middle_name) + "\r\n" + fio;
+                                                            Log(file.c_notice);
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        file.c_notice = "Дата рождения не совпадает. \r\n" + birthdate + "\r\n" + item.d_birthday.Value.ToString("dd.MM.yyyy");
+                                                        Log(file.c_notice);
+                                                    }
+
+                                                    db.Update(file);
+                                                    db.SaveChanges();
+                                                    continue;
+                                                }
+                                                else
+                                                {
+                                                    file.c_notice = "Документ неподтвержден, как PDF-сертификат о вакцинации.";
+                                                    db.Update(file);
+                                                    db.SaveChanges();
+                                                }
                                             }
                                         }
-                                    } else
-                                    {
-                                        file.c_notice = "На документе QR-код не найден.";
-                                        Log(file.c_notice);
-                                        file.c_gosuslugi_key = Guid.Empty.ToString();
-                                        db.Update(file);
-                                        db.SaveChanges();
+                                        else
+                                        {
+                                            file.c_notice = "На документе QR-код не найден.";
+                                            Log(file.c_notice);
+                                            file.c_url = "https://gosuslugi.ru";
+                                            file.c_gosuslugi_key = Guid.Empty.ToString();
+                                            db.Update(file);
+                                            db.SaveChanges();
+                                        }
                                     }
                                 }
                             }
@@ -142,6 +161,7 @@ namespace SertCheck
                         {
                             file.c_notice = "Возможно документ не является PDF-сертификатом.";
                             file.c_gosuslugi_key = Guid.Empty.ToString();
+                            file.c_url = "https://gosuslugi.ru";
                             db.Update(file);
                             db.SaveChanges();
 
@@ -175,19 +195,62 @@ namespace SertCheck
             return output;
         }
 
-        private async Task<dynamic> StreamWithNewtonsoftJson(string uri, HttpClient httpClient)
+        private async Task<dynamic> StreamWithNewtonsoftJsonV2(string uri, HttpClient httpClient)
         {
             var request = new HttpRequestMessage(HttpMethod.Get,
+            uri);
+            request.Headers.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
+            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.64");
+
+            using var response = await httpClient.SendAsync(request);
+
+            if (response.Content is object
+                && response.Content.Headers.ContentType != null)
+            {
+                using var contentStream = await response.Content.ReadAsStreamAsync();
+
+                using var streamReader = new StreamReader(contentStream);
+                //string text = streamReader.ReadToEnd();
+                using var jsonReader = new JsonTextReader(streamReader);
+
+                JsonSerializer serializer = new JsonSerializer();
+
+                try
+                {
+                    dynamic data = serializer.Deserialize(jsonReader);
+                    dynamic d = new
+                    {
+                        fio = data.items[0].attrs[0].value,
+                        birthdate = data.items[0].attrs[1].value
+                    };
+                    return d;
+                }
+                catch (JsonReaderException)
+                {
+                    Log("[ERR]: " + "Invalid JSON.");
+                }
+            }
+            else
+            {
+                Log("[ERR]: " + "HTTP Response was invalid and cannot be deserialised. " + uri);
+            }
+
+            return null;
+        }
+
+        private async Task<dynamic> StreamWithNewtonsoftJson(string uri, HttpClient httpClient)
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get,
             uri);
             request.Headers.Add("Accept", "*/*");
             request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.64");
 
-            var response = await httpClient.SendAsync(request);
+            using var response = await httpClient.SendAsync(request);
 
             if (response.Content is object 
                 && response.Content.Headers.ContentType != null)
             {
-                var contentStream = await response.Content.ReadAsStreamAsync();
+                using var contentStream = await response.Content.ReadAsStreamAsync();
 
                 using var streamReader = new StreamReader(contentStream);
                 //string text = streamReader.ReadToEnd();
@@ -215,6 +278,11 @@ namespace SertCheck
         private string getVerifyUrl(string key)
         {
             return "https://www.gosuslugi.ru/api/vaccine/v1/cert/verify/" + key;
+        }
+
+        private string getVerifyV2Url(string key)
+        {
+            return "https://www.gosuslugi.ru/api/covid-cert/v2/cert/check/" + key;
         }
 
         private string getKey(string url)
