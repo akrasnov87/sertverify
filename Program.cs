@@ -44,7 +44,7 @@ namespace SertCheck
                 var query = (from f in db.Files
                              join d in db.Documents on f.f_document equals d.id
                              join u in db.Users on d.f_user equals u.id
-                             where !u.sn_delete && !u.b_disabled && !d.sn_delete && f.c_type == "sert" && !f.sn_delete && string.IsNullOrEmpty(f.c_url)
+                             where !u.sn_delete && !u.b_disabled && !d.sn_delete && string.IsNullOrEmpty(f.c_gosuslugi_key) && f.c_type == "sert" && !f.sn_delete
                              select new { 
                                 d.id,
                                 d.c_first_name,
@@ -148,7 +148,6 @@ namespace SertCheck
                                         {
                                             file.c_notice = "На документе QR-код не найден.";
                                             Log(file.c_notice);
-                                            file.c_url = "https://gosuslugi.ru";
                                             file.c_gosuslugi_key = Guid.Empty.ToString();
                                             db.Update(file);
                                             db.SaveChanges();
@@ -161,7 +160,6 @@ namespace SertCheck
                         {
                             file.c_notice = "Возможно документ не является PDF-сертификатом.";
                             file.c_gosuslugi_key = Guid.Empty.ToString();
-                            file.c_url = "https://gosuslugi.ru";
                             db.Update(file);
                             db.SaveChanges();
 
@@ -287,7 +285,23 @@ namespace SertCheck
 
         private string getKey(string url)
         {
-            int i = url.LastIndexOf("/");
+            int i;
+            if (url.IndexOf("verify/unrz/") > 0)
+            {
+                i = url.LastIndexOf("/");
+                return "unrz/" + url.Substring(i + 1, url.Length - 1 - i);
+            }
+
+            string[] data = url.Split("//");
+
+            if (data.Count() > 2 && url.LastIndexOf("//") > 0)
+            {
+                i = url.LastIndexOf("//");
+            }
+            else
+            {
+                i = url.LastIndexOf("/");
+            }
             string key = url.Substring(i + 1, url.Length - 1 - i);
             return key;
         }
