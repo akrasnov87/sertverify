@@ -178,6 +178,15 @@ namespace SertCheck
                                 }
                             }
                         }
+                        catch(ceTe.DynamicPDF.Rasterizer.DocumentLoadException e)
+                        {
+                            file.c_notice = "Возможно документ не является PDF-сертификатом из-за ошибки в чтении.";
+                            file.c_gosuslugi_key = Guid.Empty.ToString();
+                            db.Update(file);
+                            db.SaveChanges();
+
+                            Log("[ERR]: " + e.ToString());
+                        }
                         catch (Exception e)
                         {
                             file.c_notice = "Возможно документ не является PDF-сертификатом.";
