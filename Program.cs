@@ -16,8 +16,17 @@ namespace SertCheck
     class Program
     {
         static string dir = "temp";
+        static string ignore = "ignore.log";
+        static string[] ignors = null;
+
         static void Main(string[] args)
         {
+
+            if(File.Exists(dir + "/" + ignore))
+            {
+                ignors = File.ReadAllLines(dir + "/" + ignore);
+            }
+
             if (Directory.Exists(dir))
             {
                 Directory.Delete(dir, true);
@@ -45,6 +54,7 @@ namespace SertCheck
                              join d in db.Documents on f.f_document equals d.id
                              join u in db.Users on d.f_user equals u.id
                              where !u.sn_delete && !u.b_disabled && !d.sn_delete && string.IsNullOrEmpty(f.c_gosuslugi_key) && f.c_type == "sert" && !f.sn_delete
+                             orderby f.dx_created
                              select new { 
                                 d.id,
                                 d.c_first_name,
@@ -58,11 +68,22 @@ namespace SertCheck
                 int idx = 0;
                 foreach(var item in query)
                 {
-                    Console.WriteLine(idx);
+                    Log(idx + " [" + item.f_file + "]");
+
+                    ID(item.f_file.ToString());
+
                     idx++;
                     SertCheck.Models.File file = db.Files.Where(t => t.id == item.f_file).SingleOrDefault();
                     if (file != null)
                     {
+                        if (ignors != null && ignors.Count() == 1 && ignors.Contains(item.f_file.ToString()))
+                        {
+                            file.c_notice = "Документ неподтвержден, как PDF-сертификат о вакцинации.";
+                            db.Update(file);
+                            db.SaveChanges();
+                            continue;
+                        }
+
                         try
                         {
                             byte[] bytes = file.ba_data;
@@ -169,6 +190,11 @@ namespace SertCheck
                 }
             }
 
+            if (File.Exists(dir + "/" + ignore))
+            {
+                File.Delete(dir + "/" + ignore);
+            }
+
             Log("finished " + DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"));
         }
 
@@ -179,6 +205,16 @@ namespace SertCheck
             using (StreamWriter sw = File.AppendText(dir + "/" + fileName))
             {
                 sw.WriteLine(txt);
+            }
+        }
+
+        private void ID(string id)
+        {
+            Console.WriteLine(id);
+
+            using (StreamWriter sw = File.AppendText(dir + "/" + ignore))
+            {
+                sw.WriteLine(id);
             }
         }
 
