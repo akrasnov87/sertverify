@@ -76,9 +76,10 @@ namespace SertCheck
                     SertCheck.Models.File file = db.Files.Where(t => t.id == item.f_file).SingleOrDefault();
                     if (file != null)
                     {
-                        if (ignors != null && ignors.Count() == 1 && ignors.Contains(item.f_file.ToString()))
+                        if (ignors != null && ignors.Count() > 0 && ignors.Last() == item.f_file.ToString())
                         {
                             file.c_notice = "Документ неподтвержден, как PDF-сертификат о вакцинации.";
+                            file.c_gosuslugi_key = Guid.Empty.ToString();
                             db.Update(file);
                             db.SaveChanges();
                             continue;
@@ -180,7 +181,7 @@ namespace SertCheck
                         catch (Exception e)
                         {
                             file.c_notice = "Возможно документ не является PDF-сертификатом.";
-                            file.c_gosuslugi_key = Guid.Empty.ToString();
+                            //file.c_gosuslugi_key = Guid.Empty.ToString();
                             db.Update(file);
                             db.SaveChanges();
 
