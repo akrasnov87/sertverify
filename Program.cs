@@ -247,82 +247,85 @@ namespace SertCheck
 
         private async Task<dynamic> StreamWithNewtonsoftJsonV2(string uri, HttpClient httpClient)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get, uri);
-
-            request.Headers.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
-            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.64");
-
-            using var response = await httpClient.SendAsync(request);
-
-            if (response.Content is object
-                && response.Content.Headers.ContentType != null)
+            using (var request = new HttpRequestMessage(HttpMethod.Get, uri))
             {
-                using var contentStream = await response.Content.ReadAsStreamAsync();
 
-                using var streamReader = new StreamReader(contentStream);
-                //string text = streamReader.ReadToEnd();
-                using var jsonReader = new JsonTextReader(streamReader);
+                request.Headers.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
+                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.64");
 
-                JsonSerializer serializer = new JsonSerializer();
+                using var response = await httpClient.SendAsync(request);
 
-                try
+                if (response.Content is object
+                    && response.Content.Headers.ContentType != null)
                 {
-                    dynamic data = serializer.Deserialize(jsonReader);
-                    dynamic d = new
+                    using var contentStream = await response.Content.ReadAsStreamAsync();
+
+                    using var streamReader = new StreamReader(contentStream);
+                    //string text = streamReader.ReadToEnd();
+                    using var jsonReader = new JsonTextReader(streamReader);
+
+                    JsonSerializer serializer = new JsonSerializer();
+
+                    try
                     {
-                        fio = data.items[0].attrs[0].value,
-                        birthdate = data.items[0].attrs[1].value
-                    };
-                    return d;
+                        dynamic data = serializer.Deserialize(jsonReader);
+                        dynamic d = new
+                        {
+                            fio = data.items[0].attrs[0].value,
+                            birthdate = data.items[0].attrs[1].value
+                        };
+                        return d;
+                    }
+                    catch (JsonReaderException)
+                    {
+                        Log("[ERR]: " + "Invalid JSON.");
+                    }
                 }
-                catch (JsonReaderException)
+                else
                 {
-                    Log("[ERR]: " + "Invalid JSON.");
+                    Log("[ERR]: " + "HTTP Response was invalid and cannot be deserialised. " + uri);
                 }
-            }
-            else
-            {
-                Log("[ERR]: " + "HTTP Response was invalid and cannot be deserialised. " + uri);
-            }
 
-            return null;
+                return null;
+            }
         }
 
         private async Task<dynamic> StreamWithNewtonsoftJson(string uri, HttpClient httpClient)
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get,
-            uri);
-            request.Headers.Add("Accept", "*/*");
-            request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.64");
-
-            using var response = await httpClient.SendAsync(request);
-
-            if (response.Content is object 
-                && response.Content.Headers.ContentType != null)
+            using (var request = new HttpRequestMessage(HttpMethod.Get, uri))
             {
-                using var contentStream = await response.Content.ReadAsStreamAsync();
+                request.Headers.Add("Accept", "*/*");
+                request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.64");
 
-                using var streamReader = new StreamReader(contentStream);
-                //string text = streamReader.ReadToEnd();
-                using var jsonReader = new JsonTextReader(streamReader);
+                using var response = await httpClient.SendAsync(request);
 
-                JsonSerializer serializer = new JsonSerializer();
-
-                try
+                if (response.Content is object
+                    && response.Content.Headers.ContentType != null)
                 {
-                    return serializer.Deserialize(jsonReader);
-                }
-                catch (JsonReaderException)
-                {
-                    Log("[ERR]: " + "Invalid JSON.");
-                }
-            }
-            else
-            {
-                Log("[ERR]: " + "HTTP Response was invalid and cannot be deserialised. " + uri);
-            }
+                    using var contentStream = await response.Content.ReadAsStreamAsync();
 
-            return null;
+                    using var streamReader = new StreamReader(contentStream);
+                    //string text = streamReader.ReadToEnd();
+                    using var jsonReader = new JsonTextReader(streamReader);
+
+                    JsonSerializer serializer = new JsonSerializer();
+
+                    try
+                    {
+                        return serializer.Deserialize(jsonReader);
+                    }
+                    catch (JsonReaderException)
+                    {
+                        Log("[ERR]: " + "Invalid JSON.");
+                    }
+                }
+                else
+                {
+                    Log("[ERR]: " + "HTTP Response was invalid and cannot be deserialised. " + uri);
+                }
+
+                return null;
+            }
         }
 
         private string getVerifyUrl(string key)
@@ -362,12 +365,14 @@ namespace SertCheck
         {
             try
             {
-                SmtpClient smtp = new SmtpClient("smtp.gmail.com", 587);
-                // логин и пароль
-                smtp.UseDefaultCredentials = false;
-                smtp.Credentials = new NetworkCredential("mysmtp1987@gmail.com", "Bussine$Perfect");
-                smtp.EnableSsl = true;
-                smtp.Send(mail);
+                using (SmtpClient smtp = new SmtpClient("smtp.gmail.com", 587))
+                {
+                    // логин и пароль
+                    smtp.UseDefaultCredentials = false;
+                    smtp.Credentials = new NetworkCredential("mysmtp1987@gmail.com", "Bussine$Perfect");
+                    smtp.EnableSsl = true;
+                    smtp.Send(mail);
+                }
             }
             catch (Exception e)
             {
