@@ -10,6 +10,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Net.Mail;
 using System.Net;
+using System.Threading;
 
 namespace SertCheck
 {
@@ -46,6 +47,8 @@ namespace SertCheck
 
         private void Run()
         {
+            Thread.CurrentThread.Priority = ThreadPriority.Lowest;
+
             Log("processing: " + DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss"));
 
             using (ApplicationContext db = new ApplicationContext())
@@ -68,6 +71,9 @@ namespace SertCheck
                 int idx = 0;
                 foreach(var item in query)
                 {
+
+                    Thread.Sleep(1000);
+
                     Log(idx + " [" + item.f_file + "]");
 
                     ID(item.f_file.ToString());
@@ -241,8 +247,8 @@ namespace SertCheck
 
         private async Task<dynamic> StreamWithNewtonsoftJsonV2(string uri, HttpClient httpClient)
         {
-            var request = new HttpRequestMessage(HttpMethod.Get,
-            uri);
+            var request = new HttpRequestMessage(HttpMethod.Get, uri);
+
             request.Headers.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9");
             request.Headers.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36 Edg/91.0.864.64");
 
