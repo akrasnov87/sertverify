@@ -121,9 +121,15 @@ namespace SertCheck
                                                 string url = getVerifyUrl(getKey(result.Text));
                                                 var data = StreamWithNewtonsoftJson(url, client).GetAwaiter().GetResult();
 
-                                                if (data == null)
+                                                /*if (data == null)
                                                 {
                                                     url = getVerifyV2Url(getKey(result.Text));
+                                                    data = StreamWithNewtonsoftJsonV2(url, client).GetAwaiter().GetResult();
+                                                }*/
+
+                                                if (data == null)
+                                                {
+                                                    url = getVerifyV3Url(getKey(result.Text));
                                                     data = StreamWithNewtonsoftJsonV2(url, client).GetAwaiter().GetResult();
                                                 }
 
@@ -336,6 +342,12 @@ namespace SertCheck
         private string getVerifyV2Url(string key)
         {
             return "https://www.gosuslugi.ru/api/covid-cert/v2/cert/check/" + key;
+        }
+
+        //https://www.gosuslugi.ru/api/covid-cert/v3/cert/check/9210000026404444?lang=ru&ck=14a9abcd401c067c7cb4fd84ee005ed4
+        private string getVerifyV3Url(string key)
+        {
+            return "https://www.gosuslugi.ru/api/covid-cert/v3/cert/check/" + key;
         }
 
         private string getKey(string url)
